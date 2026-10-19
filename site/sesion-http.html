@@ -1,0 +1,114 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Una sesión HTTP típica — Traducción</title><link rel="stylesheet" href="style.css"></head><body><article>
+<a class="back" href="./">← Volver a las muestras</a>
+<span class="badge">Traducción EN → ES · MDN Web Docs</span>
+<h1>Una sesión HTTP típica</h1>
+<div class="credit"><strong>Traducción al español por Eduardo Chacon.</strong><br>
+Original: «<a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Session">A typical HTTP session</a>», de MDN Web Docs (Mozilla). Autores: <a href="https://github.com/mdn/content/commits/main/files/en-us/web/http/guides/session/index.md">colaboradores de MDN</a>.<br>
+Licencia: <a href="https://creativecommons.org/licenses/by-sa/2.5/deed.es">CC BY-SA 2.5</a>. Esta traducción se distribuye bajo la misma licencia. Los ejemplos de código se mantienen como en el original.</div>
+<p>En los protocolos cliente-servidor, como HTTP, las sesiones constan de tres fases:</p>
+<ol><li>El cliente establece una conexión TCP (o la conexión correspondiente si la capa de transporte no es TCP).</li>
+<li>El cliente envía su solicitud y espera la respuesta.</li>
+<li>El servidor procesa la solicitud y devuelve su respuesta, con un código de estado y los datos correspondientes.</li></ol>
+<p>A partir de HTTP/1.1, la conexión ya no se cierra después de completar la tercera fase, y el cliente puede hacer otra solicitud: esto significa que la segunda y la tercera fase pueden repetirse cualquier número de veces.</p>
+<h2>Establecer una conexión</h2>
+<p>En los protocolos cliente-servidor, es el cliente quien establece la conexión. Abrir una conexión en HTTP significa iniciar una conexión en la capa de transporte subyacente, que normalmente es TCP.</p>
+<p>Con TCP, el puerto predeterminado de un servidor HTTP en una computadora es el puerto 80. También se pueden usar otros puertos, como 8000 u 8080. La URL de la página que se quiere obtener contiene tanto el nombre de dominio como el número de puerto, aunque este último puede omitirse si es 80. Consulta <a href="https://developer.mozilla.org/es/docs/Web/URI">la referencia de URL</a> para más detalles.</p>
+<p class="note"><strong>Nota:</strong> el modelo cliente-servidor no permite que el servidor envíe datos al cliente sin una solicitud explícita. Sin embargo, varias API web hacen posible este caso de uso, entre ellas la <a href="https://developer.mozilla.org/es/docs/Web/API/Push_API">API Push</a>, los <a href="https://developer.mozilla.org/es/docs/Web/API/Server-sent_events">eventos enviados por el servidor</a> (<i>server-sent events</i>) y la <a href="https://developer.mozilla.org/es/docs/Web/API/WebSockets_API">API de WebSockets</a>.</p>
+<h2>Enviar una solicitud del cliente</h2>
+<p>Una vez establecida la conexión, el agente de usuario puede enviar la solicitud (un agente de usuario suele ser un navegador web, pero puede ser cualquier otra cosa, por ejemplo un rastreador o <i>crawler</i>). Una solicitud del cliente consiste en directivas de texto, separadas por CRLF (retorno de carro seguido de salto de línea), divididas en tres bloques:</p>
+<ol><li>La primera línea contiene un método de solicitud seguido de sus parámetros:
+<ul><li>la ruta del documento, como URL absoluta sin el protocolo ni el nombre de dominio</li><li>la versión del protocolo HTTP</li></ul></li>
+<li>Las líneas siguientes representan una cabecera HTTP, que le da al servidor información sobre qué tipo de datos es apropiado (por ejemplo, qué idioma o qué tipos MIME) u otros datos que modifican su comportamiento (por ejemplo, no enviar una respuesta si ya está en caché). Estas cabeceras HTTP forman un bloque que termina con una línea vacía.</li>
+<li>El último bloque es un bloque de datos opcional, que puede contener más datos y se usa principalmente con el método POST.</li></ol>
+<h3>Ejemplos de solicitudes</h3>
+<p>Obtener la página raíz de developer.mozilla.org (<code>https://developer.mozilla.org/</code>) e indicarle al servidor que el agente de usuario preferiría la página en francés, si es posible:</p>
+<pre><code>GET / HTTP/1.1
+Host: developer.mozilla.org
+Accept-Language: fr
+
+</code></pre>
+<p>Observa esa última línea vacía: separa el bloque de datos del bloque de cabeceras. Como no se indica ninguna cabecera HTTP <code>Content-Length</code>, este bloque de datos se presenta vacío y marca el final de las cabeceras, lo que permite al servidor procesar la solicitud en cuanto recibe esa línea vacía.</p>
+<p>Por ejemplo, para enviar el resultado de un formulario:</p>
+<pre><code>POST /contact_form.php HTTP/1.1
+Host: developer.mozilla.org
+Content-Length: 64
+Content-Type: application/x-www-form-urlencoded
+
+name=Joe%20User&amp;request=Send%20me%20one%20of%20your%20catalogue</code></pre>
+<h3>Métodos de solicitud</h3>
+<p>HTTP define un conjunto de <a href="https://developer.mozilla.org/es/docs/Web/HTTP/Reference/Methods">métodos de solicitud</a> que indican la acción que se desea realizar sobre un recurso. Aunque también pueden ser sustantivos, a estos métodos a veces se les llama verbos HTTP. Las solicitudes más comunes son <code>GET</code> y <code>POST</code>:</p>
+<ul><li>El método <a href="https://developer.mozilla.org/es/docs/Web/HTTP/Reference/Methods/GET"><code>GET</code></a> solicita una representación de los datos del recurso indicado. Las solicitudes que usan <code>GET</code> solo deben obtener datos.</li>
+<li>El método <a href="https://developer.mozilla.org/es/docs/Web/HTTP/Reference/Methods/POST"><code>POST</code></a> envía datos a un servidor para que pueda cambiar su estado. Es el método que se usa con frecuencia en los <a href="https://developer.mozilla.org/es/docs/Learn_web_development/Extensions/Forms">formularios HTML</a>.</li></ul>
+<h2>Estructura de la respuesta del servidor</h2>
+<p>Después de que el agente conectado envía su solicitud, el servidor web la procesa y, finalmente, devuelve una respuesta. Al igual que una solicitud del cliente, la respuesta del servidor está formada por directivas de texto separadas por CRLF, aunque divididas en tres bloques:</p>
+<ol><li>La primera línea, la <em>línea de estado</em>, consiste en la confirmación de la versión de HTTP usada, seguida de un código de estado de la respuesta (y su significado breve en texto legible para las personas).</li>
+<li>Las líneas siguientes representan cabeceras HTTP específicas, que le dan al cliente información sobre los datos enviados (por ejemplo, el tipo, el tamaño, el algoritmo de compresión usado o indicaciones sobre el almacenamiento en caché). Igual que en la solicitud del cliente, estas cabeceras HTTP forman un bloque que termina con una línea vacía.</li>
+<li>El último bloque es un bloque de datos, que contiene los datos opcionales.</li></ol>
+<h3>Ejemplos de respuestas</h3>
+<p>Respuesta exitosa con una página web:</p>
+<pre><code>HTTP/1.1 200 OK
+Content-Type: text/html; charset=utf-8
+Content-Length: 55743
+Connection: keep-alive
+Cache-Control: s-maxage=300, public, max-age=0
+Content-Language: en-US
+Date: Thu, 06 Dec 2018 17:37:18 GMT
+ETag: "2e77ad1dc6ab0b53a2996dfd4653c1c3"
+Server: meinheld/0.6.1
+Strict-Transport-Security: max-age=63072000
+X-Content-Type-Options: nosniff
+X-Frame-Options: DENY
+X-XSS-Protection: 1; mode=block
+Vary: Accept-Encoding,Cookie
+Age: 7
+
+&lt;!doctype html&gt;
+&lt;html lang="en"&gt;
+&lt;head&gt;
+  &lt;meta charset="utf-8"&gt;
+  &lt;title&gt;A basic webpage&lt;/title&gt;
+&lt;/head&gt;
+&lt;body&gt;
+  &lt;h1&gt;Basic HTML webpage&lt;/h1&gt;
+  &lt;p&gt;Hello, world!&lt;/p&gt;
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>
+<p>Aviso de que el recurso solicitado se movió de forma permanente:</p>
+<pre><code>HTTP/1.1 301 Moved Permanently
+Server: Apache/2.4.37 (Red Hat)
+Content-Type: text/html; charset=utf-8
+Date: Thu, 06 Dec 2018 17:33:08 GMT
+Location: https://developer.mozilla.org/ (este es el nuevo enlace al recurso; se espera que el agente de usuario lo solicite)
+Keep-Alive: timeout=15, max=98
+Accept-Ranges: bytes
+Via: Moz-Cache-zlb05
+Connection: Keep-Alive
+Content-Length: 325 (el contenido incluye una página predeterminada que se muestra si el agente de usuario no puede seguir el enlace)
+
+&lt;!doctype html&gt;… (contiene una página personalizada del sitio que ayuda al usuario a encontrar el recurso que falta)</code></pre>
+<p>Aviso de que el recurso solicitado no existe:</p>
+<pre><code>HTTP/1.1 404 Not Found
+Content-Type: text/html; charset=utf-8
+Content-Length: 38217
+Connection: keep-alive
+Cache-Control: no-cache, no-store, must-revalidate, max-age=0
+Content-Language: en-US
+Date: Thu, 06 Dec 2018 17:35:13 GMT
+Expires: Thu, 06 Dec 2018 17:35:13 GMT
+Server: meinheld/0.6.1
+Strict-Transport-Security: max-age=63072000
+X-Content-Type-Options: nosniff
+X-Frame-Options: DENY
+X-XSS-Protection: 1; mode=block
+Vary: Accept-Encoding,Cookie
+X-Cache: Error from cloudfront
+
+&lt;!doctype html&gt;… (contiene una página personalizada del sitio que ayuda al usuario a encontrar el recurso que falta)</code></pre>
+<h3>Códigos de estado de respuesta</h3>
+<p>Los <a href="https://developer.mozilla.org/es/docs/Web/HTTP/Reference/Status">códigos de estado de respuesta HTTP</a> indican si una solicitud HTTP concreta se completó correctamente. Las respuestas se agrupan en cinco clases: respuestas informativas, respuestas exitosas, redirecciones, errores del cliente y errores del servidor.</p>
+<ul><li><a href="https://developer.mozilla.org/es/docs/Web/HTTP/Reference/Status/200"><code>200</code></a>: OK. La solicitud se realizó correctamente.</li>
+<li><a href="https://developer.mozilla.org/es/docs/Web/HTTP/Reference/Status/301"><code>301</code></a>: Moved Permanently. Este código de respuesta significa que la URI del recurso solicitado cambió.</li>
+<li><a href="https://developer.mozilla.org/es/docs/Web/HTTP/Reference/Status/404"><code>404</code></a>: Not Found. El servidor no encuentra el recurso solicitado.</li></ul>
+<h2>Véase también</h2>
+<ul><li><a href="https://developer.mozilla.org/es/docs/Web/URI">URL</a></li><li><a href="https://developer.mozilla.org/es/docs/Web/HTTP/Reference/Headers">Cabeceras HTTP</a></li><li><a href="https://developer.mozilla.org/es/docs/Web/HTTP/Reference/Methods">Métodos de solicitud HTTP</a></li><li><a href="https://developer.mozilla.org/es/docs/Web/HTTP/Reference/Status">Códigos de estado de respuesta HTTP</a></li></ul>
+</article></body></html>
